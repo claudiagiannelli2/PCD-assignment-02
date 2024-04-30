@@ -18,7 +18,6 @@ public class Ass02Step1GUI extends GenericGUI {
 
     @Override
     protected void startSearch(URL address, String word, int depth) {
-        final Map<Integer, Integer> interimReport = new HashMap<>();
         // accetta una coppia di valori <Integer, Integer> (presumibilmente rappresentanti il livello di profondità e il numero di occorrenze trovate a quel livello) e restituisce Void
         // la x è la pair
         // Chiamata al tuo metodo per eseguire la ricerca
