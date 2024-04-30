@@ -16,7 +16,8 @@ class Ass02MyVerticle extends AbstractVerticle {
     private final int profondita;
     private final Function<Pair<Integer, Integer>, Void> sendUpdates;
     private final Function<Void, Boolean> shouldRun;
-    private Ass02punto1GUI guiInstance;
+    private Ass02punto1GUI guiInstance=null;
+    private Ass02punto1CLI cliInstance=null;
 
     public Ass02MyVerticle(URL indirizzo, String parola, int profondita, Function<Pair<Integer, Integer>, Void> sendUpdates, Function<Void, Boolean> shouldRun, Ass02punto1GUI guiInstance) {
         this.indirizzo = indirizzo;
@@ -26,14 +27,27 @@ class Ass02MyVerticle extends AbstractVerticle {
         this.shouldRun = shouldRun;
         this.guiInstance = guiInstance;
     }
+    public Ass02MyVerticle(URL indirizzo, String parola, int profondita, Function<Pair<Integer, Integer>, Void> sendUpdates, Function<Void, Boolean> shouldRun, Ass02punto1CLI cliInstance) {
+        this.indirizzo = indirizzo;
+        this.parola = parola;
+        this.profondita = profondita;
+        this.sendUpdates = sendUpdates;
+        this.shouldRun = shouldRun;
+        this.cliInstance = cliInstance;
+    }
 
     @Override
     public void start() {
         getWordOccurrences(indirizzo, parola, profondita)
                 .onComplete(report -> {
                     if (report.succeeded()) {
-                        System.out.println("Report: " + report.result());
+                        //System.out.println("Report: " + report.result());
+                        if(guiInstance!=null) {
                         guiInstance.displayTotalOccurrences(report.result());
+                        }
+                        else {
+                        cliInstance.displayTotalOccurrences(report.result());  
+                        }
                     } else {
                         System.out.println("Failed to get word occurrences: " + report.cause().getMessage());
                     }
