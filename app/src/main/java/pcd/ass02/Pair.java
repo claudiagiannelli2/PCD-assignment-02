@@ -59,6 +59,8 @@ public class Pair<X,Y> {
 		return "Pair [x=" + left + ", y=" + right + "]";
 	}
 	
-	
+	public static <X> Pair<X, X> swapped(Pair<X, X> from) {
+		return Pair.of(from.right, from.left);
+	}
 
 }

@@ -34,9 +34,9 @@ public class Ass02rxCLI {
         try {
             parsedURL = new URI(address).toURL();
             totalOccurrences = 0;
-            Ass02rx rx = new Ass02rx(f, (x) -> !this.stopFlag);
+            Ass02rx rx = new Ass02rx(f, null);
             rx.getWordOccurrences(parsedURL, word, depth)
-                .subscribe(
+                /*.subscribe(
                     occurrences -> {
                         totalOccurrences += occurrences;
                     },
@@ -48,7 +48,7 @@ public class Ass02rxCLI {
                             System.out.println("Done! Found " + totalOccurrences + " occurrences");
                         }
                     }
-                );
+                )*/;
         } catch (Exception e) {
             System.out.println("Invalid URL");
             e.printStackTrace();

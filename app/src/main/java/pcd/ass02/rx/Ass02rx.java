@@ -1,82 +1,86 @@
 package pcd.ass02.rx;
 
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import pcd.ass02.*;
 
 import java.net.URL;
 import java.util.List;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-
-import pcd.ass02.*;
 
 public class Ass02rx {
 
     private final Function<Pair<Integer, Integer>, Void> sendUpdates;
-    private final Function<Void, Boolean> shouldRun;
     private final ExtractionTask<Webpage, List<URL>> absLinksExtractor = new RegexExtractor();
     private final ExtractionTask<Webpage, List<URL>> relLinksExtractor = new RegexRelExtractor();
     private final WebPageExtractor e = new WebPageExtractor();
+    private final PublishSubject<Boolean> stopEvents;
     private boolean done = false;
 
-    public Ass02rx(Function<Pair<Integer, Integer>, Void> sendUpdates, Function<Void, Boolean> shouldRun) {
+    public Ass02rx(Function<Pair<Integer, Integer>, Void> sendUpdates, PublishSubject<Boolean> stopEvents) {
         this.sendUpdates = sendUpdates;
-        this.shouldRun = shouldRun;
+        this.stopEvents = stopEvents;
     }
 
+
+    private static void extractUrls(ExtractionTask<Webpage, List<URL>> linkExtractor, Pair<Webpage, Integer> x, PublishSubject<Pair<URL, Integer>> urls) {
+        int newDepth = x.getRight() - 1;
+        System.err.println(newDepth);
+        if (newDepth < 0) {
+            return;
+        }
+        for (URL extracted : linkExtractor.extract(x.getLeft())) {
+            urls.onNext(Pair.of(extracted, newDepth));
+        }
+    }
+
+    /*private static boolean hasDone(List<PublishSubject<Object>> ps) {
+        return ps.stream().reduce(true, (x, acc) -> acc);
+    }*/
 
     public Observable<Integer> getWordOccurrences(URL address, String word, int depth) {
-        final ExtractionTask<String, Integer> occurrencesExtractor = new WordOccurrencesExtractor(word.toLowerCase());
-        final BlockingQueue<Pair<URL, Integer>> linksQueue = new LinkedBlockingQueue<>();
+        PublishSubject<Pair<URL, Integer>> urls = PublishSubject.create();
+        PublishSubject<Pair<Webpage, Integer>> bodies = PublishSubject.create();
+        PublishSubject<Pair<Integer, Integer>> stats = PublishSubject.create();
+        AtomicInteger total = new AtomicInteger();
 
-        return Observable.create(emitter -> {
-            linksQueue.add(Pair.of(address, depth));
-            while (shouldRun.apply(null) && !this.done) {
-                Pair<URL, Integer> pair = linksQueue.take();
-                if (pair.getLeft() == null) {
-                    continue;
-                }
-                doJob(pair.getLeft(), pair.getRight(), occurrencesExtractor)
-                        .flatMap(resultPair -> {
-                            int leftValue = resultPair.getLeft();
-                            List<URL> rightValue = resultPair.getRight();
-                            if (pair.getRight() > 0) {
-                                linksQueue.addAll(rightValue.stream().map(x -> Pair.of(x, depth - 1)).toList());
-                            } else if (linksQueue.isEmpty()) {
-                                this.done = true;
-                                linksQueue.add(Pair.of(null, null));
-                            }
-                            return Observable.just(leftValue); // Emesso il valore sinistro
-                        })
-                        // Accumula i valori emessi fino ad ora
-                        .reduce(0, (accumulator, newValue) -> accumulator + newValue)
-                        .subscribe(emitter::onNext, emitter::onError);
-            }
+        ExtractionTask<String, Integer> getOccurrences = new WordOccurrencesExtractor(word.toLowerCase());
 
-            emitter.onComplete(); // Emette un segnale di completamento
+        urls.observeOn(Schedulers.io()).subscribe((x) -> {
+            bodies.onNext(Pair.of(e.extract(x.getLeft()), x.getRight()));
         });
-    }
 
+        bodies.observeOn(Schedulers.computation()).subscribe((x) -> extractUrls(absLinksExtractor, x, urls));
 
-    private Observable<Pair<Webpage, List<URL>>> createWebpageObservable(URL indirizzo) {
-        return Observable.create(emitter -> {
-            Webpage page = e.extract(indirizzo);
-            List<URL> nextLinks = absLinksExtractor.extract(page);
-            nextLinks.addAll(relLinksExtractor.extract(page));
-            emitter.onNext(Pair.of(page, nextLinks));
-            emitter.onComplete();
+        bodies.observeOn(Schedulers.computation()).subscribe((x) -> extractUrls(relLinksExtractor, x, urls)
+        );
+
+        bodies.observeOn(Schedulers.computation()).subscribe((x) -> {
+            int occ = getOccurrences.extract(x.getLeft().getBody());
+            total.addAndGet(occ);
+            stats.onNext(Pair.of(x.getRight(), occ));
         });
-    }
 
-    private Observable<Pair<Integer, List<URL>>> doJob(URL indirizzo, int profondita, ExtractionTask<String, Integer> occurrencesExtractor) {
-        return createWebpageObservable(indirizzo)
-                .flatMap(pair -> {
-                    Webpage page = pair.getLeft();
-                    List<URL> nextLinks = pair.getRight();
-                    int occ = occurrencesExtractor.extract(page.getBody().toLowerCase());
-                    sendUpdates.apply(Pair.of(profondita, occ));
-                    return Single.just(Pair.of(occ, nextLinks)).toObservable();
-                });
+        stats.observeOn(Schedulers.computation()).subscribe(this.sendUpdates::apply);
+
+        //urls.isEmpty().blockingGet();
+
+        stopEvents.observeOn(Schedulers.computation()).subscribe((x) -> {
+            System.out.println("Stopping!");
+            urls.onComplete();
+            bodies.onComplete();
+            stats.onComplete();
+        });
+
+        urls.onNext(Pair.of(address, depth));
+
+        Observable.zip(
+                urls.isEmpty(),
+                bodies.isEmpty(),
+                (isEmpty1, isEmpty2) -> {return (Boolean)isEmpty1 && (Boolean)isEmpty2;}
+        );
+        return Observable.just(1);
     }
 }
