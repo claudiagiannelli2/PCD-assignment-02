@@ -1,127 +1,33 @@
 package pcd.ass02.virtualThread;
 
+import pcd.ass02.GenericGUI;
+
 import javax.swing.*;
-
-import com.google.common.base.Function;
-
-import pcd.ass02.Pair;
-
-import java.awt.*;
-import java.awt.event.*;
-import java.net.URI;
 import java.net.URL;
-import java.util.*;
 
-public class Ass02punto2GUI extends JFrame {
-    private JTextField indirizzoField, parolaField, profonditaField;
-    private JButton searchButton;
-    private JButton stopButton;
-    private JTextArea outputArea;
-    private volatile boolean stopFlag = false;
-    private Ass02MyVtCoordinator coordinator;
+public class Ass02punto2GUI extends GenericGUI {
+
+    private final Ass02MyVtCoordinator coordinator = new Ass02MyVtCoordinator((x) -> {
+        this.updateStatus(x);
+        return null;
+    }, (x) -> !this.getStopFlag());
 
     public Ass02punto2GUI() {
-        setTitle("Search Tool - VT");
-        setSize(400, 300);
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
-        setLocationRelativeTo(null);
-
-        JPanel inputPanel = new JPanel(new GridLayout(4, 2, 5, 5));
-
-        inputPanel.add(new JLabel("Indirizzo:"));
-        indirizzoField = new JTextField();
-        indirizzoField.setText("https://scuola.eutampieri.eu");
-        inputPanel.add(indirizzoField);
-
-        inputPanel.add(new JLabel("Parola:"));
-        parolaField = new JTextField();
-        parolaField.setText("il");
-        inputPanel.add(parolaField);
-
-        inputPanel.add(new JLabel("Profondita:"));
-        profonditaField = new JTextField();
-        inputPanel.add(profonditaField);
-
-        searchButton = new JButton("Cerca");
-        searchButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                Thread.ofVirtual().start(() -> {
-                    search();
-                });
-            }
-        });
-        inputPanel.add(searchButton);
-        stopButton = new JButton("Stop");
-        stopButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                stopExecution();
-            }
-        });
-        inputPanel.add(stopButton);
-
-        outputArea = new JTextArea();
-        outputArea.setEditable(false);
-        JScrollPane scrollPane = new JScrollPane(outputArea);
-
-        add(inputPanel, BorderLayout.NORTH);
-        add(scrollPane, BorderLayout.CENTER);
-
+        super();
+        this.setTitle("Search Tool - VT");
     }
 
-    private void stopExecution() {
-        stopFlag = true; // Imposta il flag di stop a true
-    }
-
-    private void search() {
-        String indirizzo = indirizzoField.getText();
-        String parola = parolaField.getText();
-        int profondita = Integer.parseInt(profonditaField.getText());
-
-        URL parsedURL;
-        this.stopFlag = false;
-        final Map<Integer, Integer> interimReport = new HashMap<>();
-        // accetta una coppia di valori <Integer, Integer> (presumibilmente
-        // rappresentanti il livello di profondità e il numero di occorrenze trovate a
-        // quel livello) e restituisce Void
-        // la x è la pair
-        Function<Pair<Integer, Integer>, Void> f = (x) -> {
-            // controlla se la mappa interimReport contiene già una chiave corrispondente al
-            // livello di profondità (x.getX()). Se non la contiene, viene inserita una
-            // nuova chiave con valore 0.
-            if (!interimReport.containsKey(x.getLeft())) {
-                interimReport.put(x.getLeft(), 0);
+    @Override
+    protected void startSearch(URL address, String word, int depth) {
+        Thread.ofVirtual().start(() -> {
+            try {
+                int occurrences = coordinator.getWordOccurrences(address, word, depth);
+                this.displayTotalOccurrences(occurrences);
+            } catch (InterruptedException e) {
+                this.addToOutput("Error: " + e.toString() + "\n");
+                e.printStackTrace();
             }
-            // viene incrementato il valore della mappa corrispondente al livello di
-            // profondità con il numero di occorrenze trovate (x.getY()).
-            interimReport.put(x.getLeft(), interimReport.get(x.getLeft()) + x.getRight());
-            // Viene calcolato il numero totale di occorrenze trovate a tutti i livelli di
-            // profondità, sommando tutti i valori della mappa interimReport.
-            int total = interimReport.values().stream().reduce(0, (acc, z) -> acc + z);
-            outputArea.append("At level " + (profondita - x.getLeft()) + ": found " + interimReport.get(x.getLeft())
-                    + " occurrences (total: " + total + ")\n");
-            return null;
-        };
-
-        try {
-            // conversione in URL
-            parsedURL = new URI(indirizzo).toURL();
-            // Chiamata al tuo metodo per eseguire la ricerca
-            coordinator = new Ass02MyVtCoordinator(f, (x) -> {
-                return !this.stopFlag;
-            }); // Creare l'istanza del coordinatore
-            int occurrences = coordinator.getWordOccurrences(parsedURL, parola, profondita);
-            if(this.stopFlag) {
-                outputArea.append("Stopped");
-            } else {
-                outputArea.append("Done");
-            }
-            outputArea.append("! Found " + occurrences + " occurrences\n");
-
-        } catch (Exception e) {
-            outputArea.append("Invalid URL\n");
-            e.printStackTrace();
-        }
+        });
     }
 
     public static void main(String[] args) {
