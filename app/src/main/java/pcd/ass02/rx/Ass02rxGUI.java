@@ -47,9 +47,7 @@ public class Ass02rxGUI extends JFrame {
         searchButton = new JButton("Cerca");
         searchButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                Thread.ofVirtual().start(() -> {
                     search();
-                });
             }
         });
         inputPanel.add(searchButton);
