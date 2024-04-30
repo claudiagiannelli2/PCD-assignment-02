@@ -15,7 +15,7 @@ public class Ass02rxCLI {
 
 
 
-    private void search(String indirizzo, String parola, int profondita) {
+    private void search(String address, String word, int depth) {
         URL parsedURL;
         this.stopFlag = false;
         final Map<Integer, Integer> interimReport = new HashMap<>();
@@ -26,16 +26,16 @@ public class Ass02rxCLI {
             }
             interimReport.put(x.getLeft(), interimReport.get(x.getLeft()) + x.getRight());
             int total = interimReport.values().stream().reduce(0, Integer::sum);
-            System.out.println("At level " + (profondita - x.getLeft()) + ": found " + interimReport.get(x.getLeft())
+            System.out.println("At level " + (depth - x.getLeft()) + ": found " + interimReport.get(x.getLeft())
                     + " occurrences (total: " + total + ")");
             return null;
         };
 
         try {
-            parsedURL = new URI(indirizzo).toURL();
+            parsedURL = new URI(address).toURL();
             totalOccurrences = 0;
-            Ass02rx rx = new Ass02rx(parsedURL, parola, profondita, f, (x) -> !this.stopFlag);
-            rx.getWordOccurrences(parsedURL, profondita)
+            Ass02rx rx = new Ass02rx(f, (x) -> !this.stopFlag);
+            rx.getWordOccurrences(parsedURL, word, depth)
                 .subscribe(
                     occurrences -> {
                         totalOccurrences += occurrences;
@@ -57,18 +57,18 @@ public class Ass02rxCLI {
 
     public static void main(String[] args) {
         /*if (args.length != 3) {
-            System.out.println("Usage: java Ass02rxCLI <indirizzo> <parola> <profondita>");
+            System.out.println("Usage: java Ass02rxCLI <address> <word> <depth>");
             System.exit(1);
         }
 
-        String indirizzo = args[0];
-        String parola = args[1];
-        int profondita = Integer.parseInt(args[2]);*/
-        String indirizzo = "https://scuola.eutampieri.eu";
-        String parola = "il";
-        int profondita = 1;
+        String address = args[0];
+        String word = args[1];
+        int depth = Integer.parseInt(args[2]);*/
+        String address = "https://scuola.eutampieri.eu";
+        String word = "il";
+        int depth = 1;
 
         Ass02rxCLI cli = new Ass02rxCLI();
-        cli.search(indirizzo, parola, profondita);
+        cli.search(address, word, depth);
     }
 }

@@ -9,15 +9,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-public class Ass02punto1CLI {
+public class Ass02Step1CLI {
     private volatile boolean stopFlag = false;
-    private int totalOccurrences = 0;
 
-    public Ass02punto1CLI() {}
+    public Ass02Step1CLI() {}
 
    
 
-    private void search(String indirizzo, String parola, int profondita) {
+    private void search(String address, String word, int depth) {
         URL parsedURL;
         this.stopFlag = false;
         final Map<Integer, Integer> interimReport = new HashMap<>();
@@ -32,16 +31,16 @@ public class Ass02punto1CLI {
             interimReport.put(x.getLeft(), interimReport.get(x.getLeft()) + x.getRight());
             // Viene calcolato il numero totale di occorrenze trovate a tutti i livelli di profondità, sommando tutti i valori della mappa interimReport.
             int total = interimReport.values().stream().reduce(0, (acc, z) -> acc + z);
-            System.out.println("At level " + (profondita - x.getLeft()) + ": found " + interimReport.get(x.getLeft()) + " occurrences (total: " + total + ")");
+            System.out.println("At level " + (depth - x.getLeft()) + ": found " + interimReport.get(x.getLeft()) + " occurrences (total: " + total + ")");
             return null;
         };
 
         try {
             // conversione in URL
-            parsedURL = new URI(indirizzo).toURL();
+            parsedURL = new URI(address).toURL();
             // Chiamata al tuo metodo per eseguire la ricerca
             Vertx vertx = Vertx.vertx();
-            vertx.deployVerticle(new Ass02MyVerticle(parsedURL, parola, profondita, f, (x) -> {return !this.stopFlag;}, this));
+            vertx.deployVerticle(new Ass02MyVerticle(parsedURL, word, depth, f, (x) -> {return !this.stopFlag;}, this));
 
         } catch (Exception e) {
             System.out.println("Invalid URL");
@@ -50,8 +49,7 @@ public class Ass02punto1CLI {
     }
 
     public void displayTotalOccurrences(int totalOccurrences) {
-        this.totalOccurrences = totalOccurrences;
-        if (stopFlag == true) {
+        if (stopFlag) {
             System.out.println("Stopped! Found " + totalOccurrences + " occurrences");
         }
         else {
@@ -61,18 +59,18 @@ public class Ass02punto1CLI {
 
     public static void main(String[] args) {
         /*if (args.length != 3) {
-            System.out.println("Usage: java Ass02punto1CLI <indirizzo> <parola> <profondita>");
+            System.out.println("Usage: java Ass02punto1CLI <address> <word> <depth>");
             System.exit(1);
         }
 
-        String indirizzo = args[0];
-        String parola = args[1];
-        int profondita = Integer.parseInt(args[2]);*/
-        String indirizzo = "https://scuola.eutampieri.eu";
-        String parola = "il";
-        int profondita = 1;
+        String address = args[0];
+        String word = args[1];
+        int depth = Integer.parseInt(args[2]);*/
+        String address = "https://scuola.eutampieri.eu";
+        String word = "il";
+        int depth = 1;
 
-        Ass02punto1CLI cli = new Ass02punto1CLI();
-        cli.search(indirizzo, parola, profondita);
+        Ass02Step1CLI cli = new Ass02Step1CLI();
+        cli.search(address, word, depth);
     }
 }

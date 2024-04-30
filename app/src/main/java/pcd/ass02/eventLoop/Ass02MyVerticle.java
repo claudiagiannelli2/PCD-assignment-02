@@ -11,26 +11,26 @@ import pcd.ass02.*;
 
 class Ass02MyVerticle extends AbstractVerticle {
 
-    private final URL indirizzo;
-    private final String parola;
-    private final int profondita;
+    private final URL address;
+    private final String word;
+    private final int depth;
     private final Function<Pair<Integer, Integer>, Void> sendUpdates;
     private final Function<Void, Boolean> shouldRun;
-    private Ass02punto1GUI guiInstance=null;
-    private Ass02punto1CLI cliInstance=null;
+    private Ass02Step1GUI guiInstance=null;
+    private Ass02Step1CLI cliInstance=null;
 
-    public Ass02MyVerticle(URL indirizzo, String parola, int profondita, Function<Pair<Integer, Integer>, Void> sendUpdates, Function<Void, Boolean> shouldRun, Ass02punto1GUI guiInstance) {
-        this.indirizzo = indirizzo;
-        this.parola = parola;
-        this.profondita = profondita;
+    public Ass02MyVerticle(URL address, String word, int depth, Function<Pair<Integer, Integer>, Void> sendUpdates, Function<Void, Boolean> shouldRun, Ass02Step1GUI guiInstance) {
+        this.address = address;
+        this.word = word;
+        this.depth = depth;
         this.sendUpdates = sendUpdates;
         this.shouldRun = shouldRun;
         this.guiInstance = guiInstance;
     }
-    public Ass02MyVerticle(URL indirizzo, String parola, int profondita, Function<Pair<Integer, Integer>, Void> sendUpdates, Function<Void, Boolean> shouldRun, Ass02punto1CLI cliInstance) {
-        this.indirizzo = indirizzo;
-        this.parola = parola;
-        this.profondita = profondita;
+    public Ass02MyVerticle(URL address, String word, int depth, Function<Pair<Integer, Integer>, Void> sendUpdates, Function<Void, Boolean> shouldRun, Ass02Step1CLI cliInstance) {
+        this.address = address;
+        this.word = word;
+        this.depth = depth;
         this.sendUpdates = sendUpdates;
         this.shouldRun = shouldRun;
         this.cliInstance = cliInstance;
@@ -38,7 +38,7 @@ class Ass02MyVerticle extends AbstractVerticle {
 
     @Override
     public void start() {
-        getWordOccurrences(indirizzo, parola, profondita)
+        getWordOccurrences(address, word, depth)
                 .onComplete(report -> {
                     if (report.succeeded()) {
                         //System.out.println("Report: " + report.result());
