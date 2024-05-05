@@ -20,19 +20,16 @@ public class Ass02rxGUI extends GenericGUI {
 
     @Override
     protected void startSearch(URL address, String word, int depth) {
-        AtomicInteger totalOccurrences = new AtomicInteger();
-        //outputArea.append("Done! Found " + occurrences + " occurrences\n");
-        // Aggiorna il valore di totalOccurrences
         new Ass02rx((x) -> {
             this.updateStatus(x);
             return null;
         }, this.stopEvents) // Creare l'istanza del coordinatore
                 .getWordOccurrences(address, word, depth)
-                /*.subscribe(
-                        totalOccurrences::addAndGet,
+                .subscribe(
+                        this::displayTotalOccurrences,
                         error -> this.addToOutput("Error: " + error.getMessage() + "\n"),
-                        () -> this.displayTotalOccurrences(totalOccurrences.get())
-                )*/;
+                        () -> {}
+                );
     }
 
 

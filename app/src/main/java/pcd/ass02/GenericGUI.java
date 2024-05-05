@@ -99,7 +99,7 @@ public abstract class GenericGUI extends JFrame {
         }
     }
 
-    protected void updateStatus(Pair<Integer, Integer> x) {
+    protected synchronized void updateStatus(Pair<Integer, Integer> x) {
         // controlla se la mappa interimReport contiene già una chiave corrispondente al livello di profondità (x.getX()). Se non la contiene, viene inserita una nuova chiave con valore 0.
         if (!interimReport.containsKey(x.getLeft())) {
             interimReport.put(x.getLeft(), 0);
@@ -108,7 +108,7 @@ public abstract class GenericGUI extends JFrame {
         interimReport.put(x.getLeft(), interimReport.get(x.getLeft()) + x.getRight());
         // Viene calcolato il numero totale di occorrenze trovate a tutti i livelli di profondità, sommando tutti i valori della mappa interimReport.
         int total = interimReport.values().stream().reduce(0, (acc, z) -> acc + z);
-        outputArea.append("At level " + (this.getDepth() - x.getLeft()) + ": found " + interimReport.get(x.getLeft()) + " occurrences (total: " + total + ")\n");
+        outputArea.append("At level " + (this.getDepth() - x.getLeft()) + ": found " + x.getRight() + " (level total: " + interimReport.get(x.getLeft()) + ") occurrences (total: " + total + ")\n");
     }
 
     protected void addToOutput(String message) {

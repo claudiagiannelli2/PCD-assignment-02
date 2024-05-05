@@ -1,6 +1,7 @@
 package pcd.ass02.rx;
 
-import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Flowable;
+import io.reactivex.rxjava3.core.Maybe;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import pcd.ass02.*;
@@ -25,11 +26,14 @@ public class Ass02rx {
     }
 
 
-    private static void extractUrls(ExtractionTask<Webpage, List<URL>> linkExtractor, Pair<Webpage, Integer> x, PublishSubject<Pair<URL, Integer>> urls) {
+    private static void extractUrls(ExtractionTask<Webpage, List<URL>> linkExtractor, Pair<Webpage, Integer> x, PublishSubject<Pair<URL, Integer>> urls, AtomicInteger linksAtLastLevel) {
         int newDepth = x.getRight() - 1;
         System.err.println(newDepth);
         if (newDepth < 0) {
             return;
+        }
+        if (newDepth == 0) {
+            linksAtLastLevel.addAndGet(1);
         }
         for (URL extracted : linkExtractor.extract(x.getLeft())) {
             urls.onNext(Pair.of(extracted, newDepth));
@@ -40,47 +44,32 @@ public class Ass02rx {
         return ps.stream().reduce(true, (x, acc) -> acc);
     }*/
 
-    public Observable<Integer> getWordOccurrences(URL address, String word, int depth) {
-        PublishSubject<Pair<URL, Integer>> urls = PublishSubject.create();
-        PublishSubject<Pair<Webpage, Integer>> bodies = PublishSubject.create();
-        PublishSubject<Pair<Integer, Integer>> stats = PublishSubject.create();
-        AtomicInteger total = new AtomicInteger();
+    private Flowable<Integer> getWordOccurrences(List<URL> addresses, String word, int depth) {
+        if(depth < 0) {
+            return Flowable.just(0);
+        }
+        ExtractionTask<String, Integer> counter = new WordOccurrencesExtractor(word.toLowerCase());
+        return Flowable.fromArray(addresses.toArray()).observeOn(Schedulers.io())
+                .map(x -> e.extract((URL)x))
+                .map(x -> {
+                    List<URL> links = absLinksExtractor.extract(x);
+                    links.addAll(relLinksExtractor.extract(x));
+                    return Pair.of(x.getBody(), links);
+                })
+                .map(x -> Pair.of(counter.extract(x.getLeft().toLowerCase()), x.getRight()))
+                .map(x -> {
+                    this.sendUpdates.apply(Pair.of(depth, x.getLeft()));
+                    return x;
+                })
+                .flatMap(x -> this.getWordOccurrences(x.getRight(), word, depth - 1)
+                        .flatMap(y -> Flowable.just(x.getLeft(), y)))
+                .map(x -> {
+                    System.out.println(" - " + x);
+                    return x;
+                });
+    }
 
-        ExtractionTask<String, Integer> getOccurrences = new WordOccurrencesExtractor(word.toLowerCase());
-
-        urls.observeOn(Schedulers.io()).subscribe((x) -> {
-            bodies.onNext(Pair.of(e.extract(x.getLeft()), x.getRight()));
-        });
-
-        bodies.observeOn(Schedulers.computation()).subscribe((x) -> extractUrls(absLinksExtractor, x, urls));
-
-        bodies.observeOn(Schedulers.computation()).subscribe((x) -> extractUrls(relLinksExtractor, x, urls)
-        );
-
-        bodies.observeOn(Schedulers.computation()).subscribe((x) -> {
-            int occ = getOccurrences.extract(x.getLeft().getBody());
-            total.addAndGet(occ);
-            stats.onNext(Pair.of(x.getRight(), occ));
-        });
-
-        stats.observeOn(Schedulers.computation()).subscribe(this.sendUpdates::apply);
-
-        //urls.isEmpty().blockingGet();
-
-        stopEvents.observeOn(Schedulers.computation()).subscribe((x) -> {
-            System.out.println("Stopping!");
-            urls.onComplete();
-            bodies.onComplete();
-            stats.onComplete();
-        });
-
-        urls.onNext(Pair.of(address, depth));
-
-        Observable.zip(
-                urls.isEmpty(),
-                bodies.isEmpty(),
-                (isEmpty1, isEmpty2) -> {return (Boolean)isEmpty1 && (Boolean)isEmpty2;}
-        );
-        return Observable.just(1);
+    public Maybe<Integer> getWordOccurrences(URL address, String word, int depth) {
+        return this.getWordOccurrences(List.of(address), word, depth).reduce(Integer::sum);
     }
 }
