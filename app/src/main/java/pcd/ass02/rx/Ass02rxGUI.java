@@ -1,5 +1,6 @@
 package pcd.ass02.rx;
 
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import pcd.ass02.GenericGUI;
 
@@ -8,22 +9,24 @@ import java.net.URL;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Ass02rxGUI extends GenericGUI {
-    private PublishSubject<Boolean> stopEvents = PublishSubject.create();
+    private Disposable task;
 
     public Ass02rxGUI() {
         super();
         setTitle("Search Tool - RX");
         stopButton.addActionListener((e) -> {
-            stopEvents.onNext(true);
+            if(task != null) {
+                task.dispose();
+            }
         });
     }
 
     @Override
     protected void startSearch(URL address, String word, int depth) {
-        new Ass02rx((x) -> {
+        task = new Ass02rx((x) -> {
             this.updateStatus(x);
             return null;
-        }, this.stopEvents) // Creare l'istanza del coordinatore
+        }) // Creare l'istanza del coordinatore
                 .getWordOccurrences(address, word, depth)
                 .subscribe(
                         this::displayTotalOccurrences,

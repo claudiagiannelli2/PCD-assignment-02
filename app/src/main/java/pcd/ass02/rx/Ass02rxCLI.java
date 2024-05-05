@@ -34,7 +34,7 @@ public class Ass02rxCLI {
         try {
             parsedURL = new URI(address).toURL();
             totalOccurrences = 0;
-            Ass02rx rx = new Ass02rx(f, null);
+            Ass02rx rx = new Ass02rx(f);
             rx.getWordOccurrences(parsedURL, word, depth)
                 /*.subscribe(
                     occurrences -> {

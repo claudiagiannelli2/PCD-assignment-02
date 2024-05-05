@@ -2,10 +2,12 @@ package pcd.ass02.rx;
 
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
+import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import pcd.ass02.*;
 
+import java.awt.*;
 import java.net.URL;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -17,12 +19,9 @@ public class Ass02rx {
     private final ExtractionTask<Webpage, List<URL>> absLinksExtractor = new RegexExtractor();
     private final ExtractionTask<Webpage, List<URL>> relLinksExtractor = new RegexRelExtractor();
     private final WebPageExtractor e = new WebPageExtractor();
-    private final PublishSubject<Boolean> stopEvents;
-    private boolean done = false;
 
-    public Ass02rx(Function<Pair<Integer, Integer>, Void> sendUpdates, PublishSubject<Boolean> stopEvents) {
+    public Ass02rx(Function<Pair<Integer, Integer>, Void> sendUpdates) {
         this.sendUpdates = sendUpdates;
-        this.stopEvents = stopEvents;
     }
 
 
