@@ -12,6 +12,7 @@ import java.net.URL;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 public class Ass02rx {
 
@@ -43,13 +44,13 @@ public class Ass02rx {
         return ps.stream().reduce(true, (x, acc) -> acc);
     }*/
 
-    private Flowable<Integer> getWordOccurrences(List<URL> addresses, String word, int depth) {
-        if(depth < 0) {
-            return Flowable.just(0);
+    private Maybe<Integer> getWordOccurrences(List<URL> addresses, String word, int depth) {
+        if (depth < 0) {
+            return Maybe.just(0);
         }
         ExtractionTask<String, Integer> counter = new WordOccurrencesExtractor(word.toLowerCase());
         return Flowable.fromArray(addresses.toArray()).observeOn(Schedulers.io())
-                .map(x -> e.extract((URL)x))
+                .map(x -> e.extract((URL) x))
                 .map(x -> {
                     List<URL> links = absLinksExtractor.extract(x);
                     links.addAll(relLinksExtractor.extract(x));
@@ -60,15 +61,14 @@ public class Ass02rx {
                     this.sendUpdates.apply(Pair.of(depth, x.getLeft()));
                     return x;
                 })
-                .flatMap(x -> this.getWordOccurrences(x.getRight(), word, depth - 1)
-                        .flatMap(y -> Flowable.just(x.getLeft(), y)))
-                .map(x -> {
-                    System.out.println(" - " + x);
-                    return x;
-                });
+                .reduce((a, b) -> Pair.of(
+                        a.getLeft() + b.getLeft(),
+                        (Stream.concat(a.getRight().stream(), b.getRight().stream()).toList()))
+                )
+                .flatMap(x -> this.getWordOccurrences(x.getRight(), word, depth - 1).map(y -> x.getLeft() + y));
     }
 
     public Maybe<Integer> getWordOccurrences(URL address, String word, int depth) {
-        return this.getWordOccurrences(List.of(address), word, depth).reduce(Integer::sum);
+        return this.getWordOccurrences(List.of(address), word, depth);
     }
 }

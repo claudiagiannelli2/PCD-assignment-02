@@ -81,6 +81,7 @@ public abstract class GenericGUI extends JFrame {
         int depth = getDepth();
 
         this.shouldStop = false;
+        this.interimReport.clear();
         try {
             URL parsedURL = new URI(address).toURL();
             startSearch(parsedURL, word, depth);

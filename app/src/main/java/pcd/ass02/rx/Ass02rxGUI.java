@@ -17,6 +17,8 @@ public class Ass02rxGUI extends GenericGUI {
         stopButton.addActionListener((e) -> {
             if(task != null) {
                 task.dispose();
+                this.addToOutput("Stopping...\nUntil now, ");
+                this.displayTotalOccurrences(interimReport.values().stream().reduce(0, Integer::sum));
             }
         });
     }

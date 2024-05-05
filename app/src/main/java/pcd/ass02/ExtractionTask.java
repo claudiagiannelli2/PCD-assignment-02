@@ -6,9 +6,9 @@ import io.vertx.core.AbstractVerticle;
 public abstract class ExtractionTask<A, B> extends AbstractVerticle {
     public abstract B extract(A from);
 
-    public Future<B> extractAsync(A from) {
+    /*public Future<B> extractAsync(A from) {
         return getVertx().executeBlocking(() -> {
             return extract(from);
         });
-    }
+    }*/
 }

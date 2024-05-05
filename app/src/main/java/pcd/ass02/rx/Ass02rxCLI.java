@@ -1,6 +1,8 @@
 package pcd.ass02.rx;
 
+import io.reactivex.rxjava3.disposables.Disposable;
 import pcd.ass02.Pair;
+
 import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
@@ -11,15 +13,15 @@ public class Ass02rxCLI {
     private volatile boolean stopFlag = false;
     private int totalOccurrences;
 
-    public Ass02rxCLI() {}
-
+    public Ass02rxCLI() {
+    }
 
 
     private void search(String address, String word, int depth) {
         URL parsedURL;
         this.stopFlag = false;
         final Map<Integer, Integer> interimReport = new HashMap<>();
-        
+
         Function<Pair<Integer, Integer>, Void> f = (x) -> {
             if (!interimReport.containsKey(x.getLeft())) {
                 interimReport.put(x.getLeft(), 0);
@@ -35,20 +37,18 @@ public class Ass02rxCLI {
             parsedURL = new URI(address).toURL();
             totalOccurrences = 0;
             Ass02rx rx = new Ass02rx(f);
-            rx.getWordOccurrences(parsedURL, word, depth)
-                /*.subscribe(
-                    occurrences -> {
-                        totalOccurrences += occurrences;
-                    },
-                    error -> System.out.println("Error: " + error.getMessage()),
-                    () -> {
-                        if (this.stopFlag) {
-                            System.out.println("Stopped! Found " + totalOccurrences + " occurrences");
-                        } else {
-                            System.out.println("Done! Found " + totalOccurrences + " occurrences");
-                        }
-                    }
-                )*/;
+            Disposable task = rx.getWordOccurrences(parsedURL, word, depth)
+                    .subscribe(
+                            occurrences -> {
+                                totalOccurrences += occurrences;
+                            },
+                            error -> System.out.println("Error: " + error.getMessage()),
+                            () -> System.out.println("Done! Found " + totalOccurrences + " occurrences")
+                    );
+            while (!task.isDisposed())
+                // Ugly hack
+                Thread.sleep(1000);
+
         } catch (Exception e) {
             System.out.println("Invalid URL");
             e.printStackTrace();
