@@ -2,15 +2,11 @@ package pcd.ass02.rx;
 
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.core.Maybe;
-import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 import pcd.ass02.*;
 
-import java.awt.*;
 import java.net.URL;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -24,25 +20,6 @@ public class Ass02rx {
     public Ass02rx(Function<Pair<Integer, Integer>, Void> sendUpdates) {
         this.sendUpdates = sendUpdates;
     }
-
-
-    private static void extractUrls(ExtractionTask<Webpage, List<URL>> linkExtractor, Pair<Webpage, Integer> x, PublishSubject<Pair<URL, Integer>> urls, AtomicInteger linksAtLastLevel) {
-        int newDepth = x.getRight() - 1;
-        System.err.println(newDepth);
-        if (newDepth < 0) {
-            return;
-        }
-        if (newDepth == 0) {
-            linksAtLastLevel.addAndGet(1);
-        }
-        for (URL extracted : linkExtractor.extract(x.getLeft())) {
-            urls.onNext(Pair.of(extracted, newDepth));
-        }
-    }
-
-    /*private static boolean hasDone(List<PublishSubject<Object>> ps) {
-        return ps.stream().reduce(true, (x, acc) -> acc);
-    }*/
 
     private Maybe<Integer> getWordOccurrences(List<URL> addresses, String word, int depth) {
         if (depth < 0) {
